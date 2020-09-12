@@ -33,6 +33,8 @@ bc_data$diagnosis <- as.factor(bc_data$diagnosis)
 # SECTION 1: RADIUS, PERIMETER, AND AREA TO CELL NUCLEI DIAGNOSIS (BENIGN VS MALIGNANT)
 #=============================================================================================================================================================================================================================
 
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3678677/ COULD BE AN ARTICLE THAT WE CAN USE AS SUPPORTING DETAILS!
+
 mean_bc_data <- bc_data %>%
   select(id:radius_mean, perimeter_mean:fractal_dimension_mean) #select columns of focus
 
@@ -89,6 +91,8 @@ ggplot(mean_bc_data, aes(x = perimeter_mean, y = area_mean, color = diagnosis)) 
 predicted <- glm(diagnosis ~ radius_mean + perimeter_mean + area_mean, family = "binomial", data = mean_bc_data)
 summary(predicted)
 
+#Why is radius negative?!
+
 probability_data <- data.frame(fitted.values = predicted$fitted.values, status = mean_bc_data$diagnosis)
 
 probability_data <- probability_data %>%
@@ -103,8 +107,10 @@ ggplot(probability_data, aes(x = rank, y = fitted.values, color = status)) +
 #As seen by the graph, our glm has accurately captured the relationship of the 3 variables to diagnosis
 # The 3 values are all good predictors of malignancy as shown by the small p-values
 
+t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
 
-
+# Curious to see why the radius has a negative relationship to diagnosis. but the other 2 have positive relationships.
+# Will have to look into this a bit more*********************
 
 
 
