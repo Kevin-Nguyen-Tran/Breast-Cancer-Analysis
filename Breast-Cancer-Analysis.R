@@ -113,6 +113,118 @@ t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sid
 # Will have to look into this a bit more*********************
 
 
+#=============================================================================================================================================================================================================================
+# SECTION 2: SMOOTHNESS & COMPACTNESS TO CELL NUCLEI DIAGNOSIS (BENIGN VS MALIGNANT)
+#=============================================================================================================================================================================================================================
+
+# Since smoothness is calculated from variability it will always be less than 1 but greater than zero
+# Would zero mean 100% smoothness and the closer you are the less variation in radius lengths.
+
+ggplot(mean_bc_data, aes(x = diagnosis, y = smoothness_mean)) +
+  geom_boxplot()
+
+# We see that the malignant cell nuclei have more average variability (less smooth) than the benign cell nuclei of breast mass.
+
+ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
+  geom_boxplot()
+
+# Compactness is defined by the cells ability to be "closely and packed together." <a href="https://medical-dictionary.thefreedictionary.com/compactness">compact</a>
+# In this case, the smaller the number, the more compact it is and the larger the number the less compact it is
+# Can we assume that???
+
+# Abiding by that assumption, Malignant cell nuclei are less compact on average than benign cancer cells
+
+# Both the smoothness and compactness seem to be categorize the closer you are to zero the higher likelihood you have a benign cell nuclei
+# and the further you are from zero the higher the likelihood you have a malignant cell nuclei
+
+# Let's look at their relationship:
+
+ggplot(mean_bc_data, aes(x = smoothness_mean, y = compactness_mean, color = diagnosis)) +
+  geom_point() +
+  geom_smooth(se = FALSE, size = 2)
+
+# This graph effectively tells us that both of the diagnoses, are positively correlated with smoothness and compactness.
+
+#=============================================================================================================================================================================================================================
+# SECTION 3: CONCAVE SEVERITY & AMOUNT TO CELL NUCLEI DIAGNOSIS (BENIGN VS MALIGNANT)
+#=============================================================================================================================================================================================================================
+
+# Can we assume that the higher the number the higher the severity of the concave portions within the cell nuclei
+# Can we assume that the higher the total number of concave portions, the higher the likelihood of malignancy?
+
+mean_bc_data %>%
+  summarise(
+    mean(concavity_mean),
+    min(concavity_mean),
+    max(concavity_mean)
+  )
+# The range of the data within concavity mean is between 0 and 0.427. Zero indicating no severity in concave portions (relatively flat)
+# let's see if we can see the relationship between concavity (severity of concave portions) to diagnosis
+
+ggplot(mean_bc_data, aes(x = diagnosis, y = concavity_mean)) +
+  geom_boxplot()
+# The higher the average concavity, the higher the likelihood of malignancy
+
+#now let's explore the number of concave portions in the same regard as severity.
+mean_bc_data %>%
+  summarise(
+    mean(concave.points_mean),
+    min(concave.points_mean),
+    max(concave.points_mean)
+  )
+# The range of the data within concavity mean is between 0 and 0.201. Zero indicating no concave portions.
+# since these numbers are less than 1, can we assume this is in reference to a proportion of the cell nuclei that has concave points??
+
+ggplot(mean_bc_data, aes(x = diagnosis, y = concave.points_mean)) +
+  geom_boxplot()
+# The higher the number of concave points (or the higher the percent of the cell nuclei with concave portions), the higher the liklihood of malignancy
+
+# When plotting the two variables above, we expect to see a positive correlation between the two in regards to diagnosis
+
+ggplot(mean_bc_data, aes(x = concave.points_mean, y = concavity_mean, color = diagnosis)) +
+  geom_point(position = "jitter", alha = 1/5) +
+  geom_smooth(se = FALSE, size = 2) +
+  geom_vline(xintercept = .0853, linetype = "dashed", color = "blue", size = 1)
+
+# Makes sense that the higher the number or proportion of concave points within a cell nuclei, the higher the severity.
+# If there is no concave points, there should be virtually no severity as the concavity is not there.
+
+# There seems to be a drop off in benign cancer cells (in terms of concave points), lets explore the max of benign diagnosis in these two variables!
+mean_bc_data %>%
+  filter(diagnosis == "B") %>%
+  summarise(
+    mean(concave.points_mean),
+    max(concave.points_mean) # max number of concave points is .0853. Let's add a vertical line to ggplot above at .09 to show cut off of concave points.
+  )
+# With that being said, can we use number of concave points as an indicator for malignancy within a cell nuclei?
+# such as that > than .0853 is a good indicator of malignancy? Can this be applied to the population? Great questions!
+
+#=============================================================================================================================================================================================================================
+# SECTION 4: SYMMETRY AND FRACTAL DIMENSIONS TO CELL NUCLEI DIAGNOSIS (BENIGN VS MALIGNANT)
+#=============================================================================================================================================================================================================================
+
+# symmetry is where there is a sense in balance of proportions. So on an axis, both halves are equal. 0 signifying no symmetry and closer to 1 as signifying symmetry
+# We will have to research fractal dimensions in regards to coastline measurements: http://fractalfoundation.org/OFC/OFC-10-4.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
