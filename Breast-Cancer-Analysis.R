@@ -8,6 +8,7 @@ library(Rmisc) # transform integers to factors, must be first or will mask other
 library(lubridate) #to modify date-time entries, if you do not have it: install.packages("lubridate")
 library(scales) #allows to modify scientific notation for values
 library(dplyr)
+library(wesanderson)
 library(tidyverse) #Run tidyverse, if you do not have: install.packages("tidyverse")
 
 # https://www.kaggle.com/uciml/breast-cancer-wisconsin-data
@@ -42,12 +43,19 @@ mean_bc_data <- bc_data %>%
 # We can do a multiple linear regression model for the radius, perimeter, and area to diagnosis.
 # let's start off with doing individual comparisons. radius -> perimeter -> area.
 
-#------------------------------------------------------------------------------------- BOX PLOTS
+#------------------------------------------------------------------------------------- [BOX PLOTS]
 
 # I hypothesize that with increasing averages, there is a higher likelihood of malignancy diagnosis: let's look at boxplots first
 
 radius_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = radius_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Radius",
+       title = "Average Radius of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 data %>%
   group_by(diagnosis) %>%
@@ -59,7 +67,15 @@ t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sid
 #-------------------------------------------------------------------------------------
 
 peri_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = perimeter_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Perimeter",
+       title = "Average Perimeter of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
 
 mean_bc_data %>%
   group_by(diagnosis) %>%
@@ -68,7 +84,14 @@ mean_bc_data %>%
 #-------------------------------------------------------------------------------------
 
 area_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = area_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Area",
+       title = "Average Area of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 mean_bc_data %>%
   group_by(diagnosis) %>%
@@ -77,16 +100,38 @@ mean_bc_data %>%
 #For all three boxplots, they show a dramatic difference between average size. There is a positive correlation between radius, perimeter, and area to categorization of malignancy.
 multiplot(radius_bp, peri_bp, area_bp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
 
-#------------------------------------------------------------------------------------- DENSITY PLOTS
+#------------------------------------------------------------------------------------- [DENSITY PLOTS]
 
 radius_dp <- ggplot(mean_bc_data, aes(x = radius_mean, fill = diagnosis)) +
-  geom_density(size = 1, alpha = .5)
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Radius", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Radius of between 15 and 20",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 peri_dp <- ggplot(mean_bc_data, aes(x = perimeter_mean, fill = diagnosis)) +
-  geom_density(size = 1, alpha = .5)
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Perimeter", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Perimeter of between 100 and 130",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
 
 area_dp <- ggplot(mean_bc_data, aes(x = area_mean, fill = diagnosis)) +
-  geom_density(size = 1, alpha = .5)
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Area", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Area of between 700 and 1250",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 multiplot(radius_dp, peri_dp, area_dp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
 
@@ -95,19 +140,40 @@ multiplot(radius_dp, peri_dp, area_dp, cols = 2) #the above 3 plots plotted on a
 # A density plot is great to see how the patients are distributed by their diagnosis and to see how the peaks signify at a particular x value, where the most patients will fall into that bin.
 
 
-#------------------------------------------------------------------------------------- SCATTER PLOTS
+#------------------------------------------------------------------------------------- [SCATTER PLOTS]
 
 # what would it look like if we created a scatter plot between the average radius, perimeter and area (color to reflect diagnosis)
 # All sharing a positive correlation
 
 rp_sp <- ggplot(mean_bc_data, aes(x = radius_mean, y = perimeter_mean, color = diagnosis)) +
-  geom_point()
+  geom_point()+
+  labs(x = "Average Radius", 
+       y = "Average Perimeter",
+       title = "Positive Linear Correlation",
+       subtitle = "Between the Radius and Perimeter",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 ra_sp <- ggplot(mean_bc_data, aes(x = radius_mean, y = area_mean, color = diagnosis)) +
-  geom_point()
+  geom_point() +
+  labs(x = "Average Radius", 
+       y = "Average Area",
+       title = "Positive Correlation",
+       subtitle = "Between the Radius and Area",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 pa_sp <- ggplot(mean_bc_data, aes(x = perimeter_mean, y = area_mean, color = diagnosis)) +
-  geom_point()
+  geom_point() +
+  labs(x = "Average Perimeter", 
+       y = "Average Area",
+       title = "Positive Correlation",
+       subtitle = "Between the Perimeter and Area",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 multiplot(rp_sp, ra_sp, pa_sp, cols = 2)
 
@@ -120,12 +186,26 @@ multiplot(rp_sp, ra_sp, pa_sp, cols = 2)
 # Would zero mean 100% smoothness and the closer you are the less variation in radius lengths.
 
 ggplot(mean_bc_data, aes(x = diagnosis, y = smoothness_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Smoothness",
+       title = "Malignant Cell Nuclei are Less Smooth",
+       subtitle = "Closer to Zero, Less Variation in Radius Lengths",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 # We see that the malignant cell nuclei have more average variability (less smooth) than the benign cell nuclei of breast mass.
 
 ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Compactness",
+       title = "Malignant Cell Nuclei are Less Compact",
+       subtitle = "Closer to Zero, the More Compact",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 # Compactness is defined by the cells ability to be "closely and packed together." <a href="https://medical-dictionary.thefreedictionary.com/compactness">compact</a>
 # In this case, the smaller the number, the more compact it is and the larger the number the less compact it is
@@ -140,7 +220,14 @@ ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
 
 ggplot(mean_bc_data, aes(x = smoothness_mean, y = compactness_mean, color = diagnosis)) +
   geom_point() +
-  geom_smooth(se = FALSE, size = 2)
+  geom_smooth(se = FALSE, size = 2) +
+  labs(x = "Average Smoothness", 
+       y = "Average Compactness",
+       title = "Positive Correlation Between Smoothness and Compactness",
+       subtitle = "Seen in Both Benign and Malignant Cell Nuclei",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 # This graph effectively tells us that both of the diagnoses, are positively correlated with smoothness and compactness.
 
@@ -161,7 +248,14 @@ mean_bc_data %>%
 # let's see if we can see the relationship between concavity (severity of concave portions) to diagnosis
 
 ggplot(mean_bc_data, aes(x = diagnosis, y = concavity_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Concavity",
+       title = "Malignant Cell Nuclei are More Severe in Concavity",
+       subtitle = "Closer to Zero, Less Severity in Concave Portions",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # The higher the average concavity, the higher the likelihood of malignancy
 
 #now let's explore the number of concave portions in the same regard as severity.
@@ -175,7 +269,14 @@ mean_bc_data %>%
 # since these numbers are less than 1, can we assume this is in reference to a proportion of the cell nuclei that has concave points??
 
 ggplot(mean_bc_data, aes(x = diagnosis, y = concave.points_mean)) +
-  geom_boxplot()
+  geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Number of Concave Portions",
+       title = "Malignant Cell Nuclei Have More Concave Portions",
+       subtitle = "Closer to Zero, Less Concave Portions",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # The higher the number of concave points (or the higher the percent of the cell nuclei with concave portions), the higher the liklihood of malignancy
 
 # When plotting the two variables above, we expect to see a positive correlation between the two in regards to diagnosis
@@ -183,12 +284,21 @@ ggplot(mean_bc_data, aes(x = diagnosis, y = concave.points_mean)) +
 ggplot(mean_bc_data, aes(x = concave.points_mean, y = concavity_mean, color = diagnosis)) +
   geom_point(position = "jitter", alha = 1/5) +
   geom_smooth(se = FALSE, size = 2) +
-  geom_vline(xintercept = .0853, linetype = "dashed", color = "blue", size = 1)
+  geom_vline(xintercept = .0853, linetype = "dashed", color = "blue", size = 1) +
+  labs(x = "Average Number of Concave Portions", 
+       y = "Average Concavity",
+       title = "Benign Cell Nuclei has a Sudden Breakpoint",
+       subtitle = "Number of Concave Points can be a Good Predictor of Malignancy",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 # Makes sense that the higher the number or proportion of concave points within a cell nuclei, the higher the severity.
 # If there is no concave points, there should be virtually no severity as the concavity is not there.
 
 # There seems to be a drop off in benign cancer cells (in terms of concave points), lets explore the max of benign diagnosis in these two variables!
+# 100% of cancer cells with a number > 0.0853 of concave Portions are Malignant!
+
 mean_bc_data %>%
   filter(diagnosis == "B") %>%
   summarise(
@@ -242,8 +352,14 @@ probability_data <- probability_data %>%
   mutate(rank = 1:nrow(probability_data))
 
 ggplot(probability_data, aes(x = rank, y = fitted.values, color = status)) +
-  geom_point(alpha = 1, shape = 1, stroke = 2)
-
+  geom_point(alpha = 1, shape = 1, stroke = 2) +
+  labs(x = "Rank", 
+       y = "Predicted Probability of Malignancy",
+       title = "Predicted Probability of Malignant Cell Nuclei",
+       subtitle = "Closer to One, the Higher the Probability of Malignancy",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 #As seen by the graph, our glm has accurately captured the relationship of the 3 variables to diagnosis
 # The 3 values are all good predictors of malignancy as shown by the small p-values
 
