@@ -1,0 +1,202 @@
+---
+title: "Breast Cancer UCI Analysis"
+author: "Kevin Tran"
+date: "9/14/2020"
+output: html_document
+bibliography: breastcancer.bib
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) #removes all variables stored previously in Environment (good habit to include)
+
+library(Rmisc) # transform integers to factors, must be first or will mask other packages. We only need multiplot!
+library(lubridate) #to modify date-time entries, if you do not have it: install.packages("lubridate")
+library(scales) #allows to modify scientific notation for values
+library(dplyr)
+library(wesanderson)
+library(tidyverse) #Run tidyverse, if you do not have: install.packages("tidyverse")
+
+# https://www.kaggle.com/uciml/breast-cancer-wisconsin-data
+
+#read the data set into RStudio and stored into object
+data <- read.csv("C:/Users/Kevin/Desktop/Breast-Cancer-Analysis/Breast Cancer Wisconsin Data Set.csv")
+
+bc_data <- as_tibble(data)
+
+bc_data$diagnosis <- as.factor(bc_data$diagnosis)
+
+```
+
+## Abstract
+[COME BACK TO THIS SECTION ONCE EVERYTHING ELSE IS COMPLETED]
+
+## Radius, Perimeter, and Area to Cell Nuclei Diagnosis (Benign vs Malignant)
+
+```{r, include=FALSE}
+mean_bc_data <- bc_data %>%
+  select(id:radius_mean, perimeter_mean:fractal_dimension_mean) #select columns of focus
+```
+
+One of the most common cancers within the female population is breast carcinoma. Normal cells will transform and the formation of cancer cells will occur. The transformation of these cells can be assessed by looking at their nuclear morphometry.The nuclear morphometric features of size, shape, pattern, etc, have shown to predict the prognosis of breast cancer patients. [@narasimha2013significance] 
+
+We will evaluate size by their radius, perimeter, and area. As shown in the study conducted by [@narasimha2013significance] , "there was a gradual increase in the nuclear area and perimeter in carcinomas when compared to benign lesions." Therefore, we will assume a positive correlation between size and carcinomas (malignant cell nuclei).
+
+We will begin our research with individual analysis of the radius, perimeter, and area and their relationship to the diagnosis.
+
+**The boxplot below shows the average raidus of benign and malignant cell nuclei:**
+```{r}
+radius_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = radius_mean)) +
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Radius",
+       title = "Average Radius of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(radius_mean)) # average radius Benign = 12.1 and Malignant = 17.5
+
+t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
+```
+
+As seen in the averages, the average radius of a benign cell nuclei is 12.1 and of a malignant cell nuclei is 17.5. The averages are significantly different from eachother as shown in the t-test.
+
+Our null hypothesis: there is no difference between the averages of a benign and malignant cell nuclei.
+Because our p-value is close to zero, we can reject our null hypothesis above and conclude that there is a statisitically significant difference between the two average. 
+
+Since zero is also not within the confidence interval, it supports our rejection of the null with 95% confidence.
+
+**Next, we will look at the average perimeter of benign and malignant cell nuclei:**
+```{r}
+peri_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = perimeter_mean)) +
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Perimeter",
+       title = "Average Perimeter of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+
+mean_bc_data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(perimeter_mean)) # average perimeter Benign = 78.1 and Malignant = 115
+```
+
+On average, benign cell nuclei had an average perimeter of 78.08 and malignant cell nuclei had an average of 115.4. 
+
+**Lastly, we will look at the average area of benign cell nuclei and malignant cell nuclei:**
+```{r}
+area_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = area_mean)) +
+  geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
+  labs(x = "Diagnosis (Benign vs Malignant)", 
+       y = "Average Area",
+       title = "Average Area of Malignant Cell Nuclei are Larger",
+       subtitle = "Breast Cancer UCI Data",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+mean_bc_data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(area_mean)) # average area Benign = 463 and Malignant = 978
+```
+
+As seen again, the malignant cell nuclei has a larger average than benign cell nuclei.
+
+The benign cell nuclei had an average area of 463 and the malignant cell nuclei had an average area of 978.
+
+**Let's visualize all 3 plots side-by-side and record the relationship seen:**
+```{r}
+multiplot(radius_bp, peri_bp, area_bp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
+```
+
+The relationship seen within this side-by-side comparison is that each variable of size (radius, perimeter, and area) shares a positive correlation with malignancy. As the size of each variable increases, the higher the likelihood of being categorized as malignant.
+
+This shared relationship is not surprising since a greater radius would signify a greater perimeter, which would signify a greater area.
+
+**Let's now look at how the patients are distributed among the different diagnoses:**
+```{r}
+radius_dp <- ggplot(mean_bc_data, aes(x = radius_mean, fill = diagnosis)) +
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Radius", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Radius of between 15 and 20",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+peri_dp <- ggplot(mean_bc_data, aes(x = perimeter_mean, fill = diagnosis)) +
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Perimeter", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Perimeter of between 100 and 130",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+
+area_dp <- ggplot(mean_bc_data, aes(x = area_mean, fill = diagnosis)) +
+  geom_density(size = 1, alpha = .5) +
+  labs(x = "Average Area", 
+       y = "Density",
+       title = "Majority of Malignant Cells have an",
+       subtitle = "Average Area of between 700 and 1250",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(radius_dp, peri_dp, area_dp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
+```
+
+The density plot is a great visual aid to see how the patients are distributed depending on their diagnosis. The peaks signify that at that particular x value, a majority of the patients will fall into that bin.
+
+Lastly, let's look at the relationship of each variable of size (radius, perimeter, and area) to each other.
+
+**We will do this with the use of scatter plots as shown below:**
+```{r}
+rp_sp <- ggplot(mean_bc_data, aes(x = radius_mean, y = perimeter_mean, color = diagnosis)) +
+  geom_point()+
+  labs(x = "Average Radius", 
+       y = "Average Perimeter",
+       title = "Positive Linear Correlation",
+       subtitle = "Between the Radius and Perimeter",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+ra_sp <- ggplot(mean_bc_data, aes(x = radius_mean, y = area_mean, color = diagnosis)) +
+  geom_point() +
+  labs(x = "Average Radius", 
+       y = "Average Area",
+       title = "Positive Correlation",
+       subtitle = "Between the Radius and Area",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+pa_sp <- ggplot(mean_bc_data, aes(x = perimeter_mean, y = area_mean, color = diagnosis)) +
+  geom_point() +
+  labs(x = "Average Perimeter", 
+       y = "Average Area",
+       title = "Positive Correlation",
+       subtitle = "Between the Perimeter and Area",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(rp_sp, ra_sp, pa_sp, cols = 2)
+```
+
+An increase in one variable of size (radius, perimeter, or area) will result in an increase of another variable as they all share a positive correlation with one another. We also see a natural shift of malignancy as the size increases in all three measurements of radius, perimeter, and area. Therefore, we can conclude that a large cell nuclei could increase the likelihood of being malignant.
+
+## Smoothness and Compactness to Cell Nuclei Diagnosis (Benign vs Malignant)
+
+## Citations
+
