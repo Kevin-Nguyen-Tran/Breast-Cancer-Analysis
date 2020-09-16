@@ -198,5 +198,160 @@ An increase in one variable of size (radius, perimeter, or area) will result in 
 
 ## Smoothness and Compactness to Cell Nuclei Diagnosis (Benign vs Malignant)
 
+Smoothness is calculated by the local variation in radius lengths within a cell nuclei. The closer it is to zero, the less variation and more smooth the cell nuclei is. The further away it is from zero, the more variability and less smooth the cell nuclei is. 
+
+We will visualize the average smoothness between benign and malignant cells:
+```{r}
+ggplot(mean_bc_data, aes(x = diagnosis, y = smoothness_mean)) +
+  geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Smoothness",
+       title = "Malignant Cell Nuclei are Less Smooth",
+       subtitle = "Closer to Zero, Less Variation in Radius Lengths",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+t.test(mean_bc_data$smoothness_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
+```
+
+We see that on average, malignant cells have more variation and are less smooth. Also, according to our t-test, there is a statistically significant difference between the average smoothness of benign and malignant cell nuclei.
+
+Compactness is defined by the cells ability to be packed together closely.
+In this case, the smaller the number, the more compact it is and the larger the number the less compact it is
+
+```{r}
+ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
+  geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Compactness",
+       title = "Malignant Cell Nuclei are Less Compact",
+       subtitle = "Closer to Zero, the More Compact",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Malignant cell nuclei are less compact on average than benign cancer cells.
+Both the smoothness and compactness seem to categorize diagnosis by the following:
+
+* The closer you are to zero the higher the likelihood you have a benign cell nuclei and the further you are from zero the higher the likelihood you have a malignant cell nuclei.
+
+Now, let's look at the relationship between smoothness and compactness of a cell nuclei:
+```{r}
+ggplot(mean_bc_data, aes(x = smoothness_mean, y = compactness_mean, color = diagnosis)) +
+  geom_point() +
+  geom_smooth(se = FALSE, size = 2) +
+  labs(x = "Average Smoothness", 
+       y = "Average Compactness",
+       title = "Positive Correlation Between Smoothness and Compactness",
+       subtitle = "Seen in Both Benign and Malignant Cell Nuclei",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+This graph effectively tells us that both of the diagnoses, are positively correlated with smoothness and compactness.
+
+## Concave Severity & Amount to Cell Nuclei Diagnosis (Benign vs Malignant)
+
+Within this section of the analysis, concavity represents the severity of concave portions of the contour and the concave points represents the number of concave portions of the contour. The larger the number, the more severe the concave portions are and the higher the number of concave portions within a contour.
+
+Let's take a look at the summary data for concavity:
+```{r}
+mean_bc_data %>%
+  summarise(
+    mean(concavity_mean),
+    min(concavity_mean),
+    max(concavity_mean)
+  )
+```
+The range of the data within concavity is between 0 and 0.427. Zero indicating no severity in concave portions (relatively flat)
+
+Let's see if we can see the relationship between concavity (severity of concave portions) to diagnosis:
+```{r}
+ggplot(mean_bc_data, aes(x = diagnosis, y = concavity_mean)) +
+  geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Concavity",
+       title = "Malignant Cell Nuclei are More Severe in Concavity",
+       subtitle = "Closer to Zero, Less Severity in Concave Portions",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+As seen above, the higher the average concavity, the higher the likelihood of malignancy.
+
+Now let's explore the number of concave portions in the same regard as severity:
+```{r}
+mean_bc_data %>%
+  summarise(
+    mean(concave.points_mean),
+    min(concave.points_mean),
+    max(concave.points_mean)
+  )
+```
+
+The range of the data within concavity mean is between 0 and 0.201. Zero indicating no concave portions.
+
+```{r}
+ggplot(mean_bc_data, aes(x = diagnosis, y = concave.points_mean)) +
+  geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
+  labs(x = "Diagnosis", 
+       y = "Average Number of Concave Portions",
+       title = "Malignant Cell Nuclei Have More Concave Portions",
+       subtitle = "Closer to Zero, Less Concave Portions",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+The higher the number of concave points (or the higher the percent of the cell nuclei with concave portions), the higher the likelihood of malignancy.
+Both the severity and amount of concave points indicate a positive relationship with diagnosis.
+
+Therefore, if we plot the above variables, we assume to see a positive relationship as well:
+```{r}
+ggplot(mean_bc_data, aes(x = concave.points_mean, y = concavity_mean, color = diagnosis)) +
+  geom_point(position = "jitter", alha = 1/5) +
+  geom_smooth(se = FALSE, size = 2) +
+  geom_vline(xintercept = .0853, linetype = "dashed", color = "blue", size = 1) +
+  labs(x = "Average Number of Concave Portions", 
+       y = "Average Concavity",
+       title = "Benign Cell Nuclei has a Sudden Breakpoint",
+       subtitle = "Number of Concave Points can be a Good Predictor of Malignancy",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+This relationship makes sense because the higher the number or proportion of concave points within a cell nuclei, the higher the severity.
+If there are no concave points, there should be virtually no severity as the concavity is not there.
+
+There seems to be a drop off in benign cancer cells (in terms of concave points), lets explore the max of benign diagnosis in these two variables!
+
+* 100% of cancer cells with a number > 0.0853 of concave Portions are Malignant!
+
+```{r}
+mean_bc_data %>%
+  filter(diagnosis == "B") %>%
+  summarise(
+    mean(concave.points_mean),
+    max(concave.points_mean) # max number of concave points is .0853. Let's add a vertical line to ggplot above at .09 to show cut off of concave points.
+  )
+```
+
+With that being said, can we use number of concave points as an strong indicator/predictor for malignancy within a cell nuclei?
+such as that greater than .0853 is a good indicator of malignancy? Can this be applied to the population?
+
+* We can explore that with Logistic Linear Regression and see if this variable is a good predictor of malignancy compared to the other known variables.
+
+## Logistic Regression - Binomial for all Analyzed Variables in Relation to Diagnosis
+
+```{r}
+predicted <- glm(diagnosis ~ radius_mean + perimeter_mean + area_mean + smoothness_mean + compactness_mean + concavity_mean + concave.points_mean, family = "binomial", data = mean_bc_data)
+summary(predicted)
+```
+
+
+
+
+
 ## Citations
 
