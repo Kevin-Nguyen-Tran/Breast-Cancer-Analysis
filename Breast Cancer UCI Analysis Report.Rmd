@@ -28,7 +28,32 @@ bc_data$diagnosis <- as.factor(bc_data$diagnosis)
 ```
 
 ## Abstract
-[COME BACK TO THIS SECTION ONCE EVERYTHING ELSE IS COMPLETED]
+This analysis deals with exploring different morphometric features of cell nuclei and their relationship to diagnosis. The key morphometric features that we are going to focus on are the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave portions. Within each section of the analysis, we will explore each feature separately in relation to diagnosis (benign vs malignant) and then compare each feature to each other. The data represented in this analysis can be found on [archive.ics.uci.edu](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29).
+
+**Attribute Information:**
+
+1) ID number
+2) Diagnosis (M = Malignant, B = Benign)
+
+**The Morphometric Features:**
+
+a) radius (mean of distances from center to points on the perimeter)
+c) perimeter
+d) area
+e) smoothness (local variation in radius lengths)
+f) compactness (perimeter^2 / area - 1.0)
+g) concavity (severity of concave portions of the contour)
+h) concave points (number of concave portions of the contour)
+
+**The data analysis will be broken down by the following sections:**
+
+* Radius, Perimeter, and Area to Cell Nuclei Diagnosis 
+
+* Smoothness and Compactness to Cell Nuclei Diagnosis 
+
+* Concave Severity & Amount to Cell Nuclei Diagnosis 
+
+* Logistic Regression - Binomial for all Analyzed Variables in Relation to Diagnosis
 
 ## Radius, Perimeter, and Area to Cell Nuclei Diagnosis (Benign vs Malignant)
 
@@ -43,7 +68,7 @@ We will evaluate size by their radius, perimeter, and area. As shown in the stud
 
 We will begin our research with individual analysis of the radius, perimeter, and area and their relationship to the diagnosis.
 
-**The boxplot below shows the average raidus of benign and malignant cell nuclei:**
+**The boxplot below shows the average radius of benign and malignant cell nuclei:**
 ```{r}
 radius_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = radius_mean)) +
   geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
@@ -232,7 +257,7 @@ ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
-Malignant cell nuclei are less compact on average than benign cancer cells.
+Malignant cell nuclei are less compact on average than benign cell nuclei.
 Both the smoothness and compactness seem to categorize diagnosis by the following:
 
 * The closer you are to zero the higher the likelihood you have a benign cell nuclei and the further you are from zero the higher the likelihood you have a malignant cell nuclei.
@@ -265,9 +290,9 @@ mean_bc_data %>%
     max(concavity_mean)
   )
 ```
-The range of the data within concavity is between 0 and 0.427. Zero indicating no severity in concave portions (relatively flat)
+The range of the data within concavity is between 0 and 0.427. Zero indicating no severity in concave portions (relatively flat).
 
-Let's see if we can see the relationship between concavity (severity of concave portions) to diagnosis:
+Let's see if we can visualize the relationship between concavity (severity of concave portions) to diagnosis:
 ```{r}
 ggplot(mean_bc_data, aes(x = diagnosis, y = concavity_mean)) +
   geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
@@ -326,7 +351,7 @@ If there are no concave points, there should be virtually no severity as the con
 
 There seems to be a drop off in benign cancer cells (in terms of concave points), lets explore the max of benign diagnosis in these two variables!
 
-* 100% of cancer cells with a number > 0.0853 of concave Portions are Malignant!
+* 100% of cancer cells with an average number of concave Portions > 0.0853 are Malignant!
 
 ```{r}
 mean_bc_data %>%
@@ -338,20 +363,65 @@ mean_bc_data %>%
 ```
 
 With that being said, can we use number of concave points as an strong indicator/predictor for malignancy within a cell nuclei?
-such as that greater than .0853 is a good indicator of malignancy? Can this be applied to the population?
+such as that an average greater than .0853 is a good indicator of malignancy? Can this be applied to the population?
 
 * We can explore that with Logistic Linear Regression and see if this variable is a good predictor of malignancy compared to the other known variables.
 
 ## Logistic Regression - Binomial for all Analyzed Variables in Relation to Diagnosis
+
+Below is a Binomial Logistic Linear Regression for predicting the diagnosis of the cell nuclei. 
+
+The model will utilize the variables used throughout this analysis (radius, perimeter, area, smoothness, compactness, concavity, and number of concave points) and determine which are good predictors and which are not. Good predictors are indicated by a small p-value and large effect size (Estimate).
 
 ```{r}
 predicted <- glm(diagnosis ~ radius_mean + perimeter_mean + area_mean + smoothness_mean + compactness_mean + concavity_mean + concave.points_mean, family = "binomial", data = mean_bc_data)
 summary(predicted)
 ```
 
+As seen above there are two variables that are statistically significant (less than 5%):
 
+* Average Area
 
+* Average Number of Concave Points
 
+Now we will look at the effect size (Estimate). Although the average area has a statistically significant p-value, the effect size is relatively small at 0.03258.
+
+However, the average number of concave points has a statistically significant p-value and has a relatively large effect size at 66.82251.
+
+We can conclude from our regression analysis that the average area is a good predictor but the average number of concave points is the best predictor of diagnosis (Benign vs Malignant). 
+
+Lastly, we will graph our Regression Model above and ensure it captures the expected binomial relationship between diagnosis and the variables:
+```{r}
+probability_data <- data.frame(fitted.values = predicted$fitted.values, status = mean_bc_data$diagnosis)
+
+probability_data <- probability_data %>%
+  arrange(fitted.values)
+
+probability_data <- probability_data %>%
+  mutate(rank = 1:nrow(probability_data))
+
+ggplot(probability_data, aes(x = rank, y = fitted.values, color = status)) +
+  geom_point(alpha = 1, shape = 1, stroke = 2) +
+  labs(x = "Rank", 
+       y = "Predicted Probability of Malignancy",
+       title = "Predicted Probability of Malignant Cell Nuclei",
+       subtitle = "Closer to One, the Higher the Probability of Malignancy",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+As seen by the graph, our linear model has accurately captured the relationship of the variables to diagnosis.
+
+## Conclusion
+
+One of the most common cancers within the female population is breast carcinoma. Understanding the correlation between the nuclear morphometry and diagnosis can lead to early and accurate diagnosis. Which can lead to early treatment. As shown in this analysis, the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave portions all showed a positive correlation with malignancy. As the number grew further from zero, the higher the likelihood of the cell nuclei being malignant. 
+
+Although all morphometric features showed statistically meaningful correlations, there were only a select few that were marked as good predictors of malignancy as seen in our Binomial Linear Regression model. Overall, the average area and number of concave points of the cell nuclei were the two good predictors of malignancy in our analysis. The reason being, the average area had a p-value of 0.013 and an effect size of 0.033 and the average number of concave points had a p-value of 0.0043 and an effect size of 66.82. Due to the large effect size and small p-value, the average number of concave points is the best predictor within our analysis.
+
+**Opportunities for further analysis could be researching the following:**
+
+* Looking at the number of concave points as a focal morphometric feature in other types of cancer cells
 
 ## Citations
 
