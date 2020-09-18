@@ -28,7 +28,9 @@ bc_data$diagnosis <- as.factor(bc_data$diagnosis)
 ```
 
 ## Abstract
-This analysis deals with exploring different morphometric features of cell nuclei and their relationship to diagnosis. The key morphometric features that we are going to focus on are the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave portions. Within each section of the analysis, we will explore each feature separately in relation to diagnosis (benign vs malignant) and then compare each feature to each other. The data represented in this analysis can be found on [archive.ics.uci.edu](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29).
+This analysis deals with exploring different morphometric features of cell nuclei and their relationship to diagnosis. The key morphometric features that we are going to focus on are the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave points. Within each section of the analysis, we will explore each feature separately in relation to diagnosis (benign vs malignant) and then compare each feature to each other. 
+
+The data for this analysis were collected from a Fine Needle Aspiration Cytology (FNAC). This process includes using a narrow-gauge needle to collect a lesion sample for microscopic examination. [@roskell2004fine] "In symptomatic breast disease, FNAC used alongside clinical and radiological assessment allows rapid, inexpensive, and accurate diagnosis." [@roskell2004fine] The data represented in this analysis can be found on [archive.ics.uci.edu](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29).
 
 **Attribute Information:**
 
@@ -37,13 +39,13 @@ This analysis deals with exploring different morphometric features of cell nucle
 
 **The Morphometric Features:**
 
-a) radius (mean of distances from center to points on the perimeter)
-c) perimeter
-d) area
+a) radius (mean of distances from the center to points on the perimeter in um (micrometers))
+c) perimeter (um)
+d) area (um^2^) [@abdalla2008nuclear]
 e) smoothness (local variation in radius lengths)
-f) compactness (perimeter^2 / area - 1.0)
-g) concavity (severity of concave portions of the contour)
-h) concave points (number of concave portions of the contour)
+f) compactness (perimeter^2^ / area - 1.0)
+g) concavity (severity of concave points along the nuclear border)
+h) concave points (number of concave points along the nuclear border)
 
 **The data analysis will be broken down by the following sections:**
 
@@ -55,20 +57,76 @@ h) concave points (number of concave portions of the contour)
 
 * Logistic Regression - Binomial for all Analyzed Variables in Relation to Diagnosis
 
-## Radius, Perimeter, and Area to Cell Nuclei Diagnosis (Benign vs Malignant)
+## Radius, Perimeter, and Area to Cell Nuclei Diagnosis 
 
 ```{r, include=FALSE}
 mean_bc_data <- bc_data %>%
   select(id:radius_mean, perimeter_mean:fractal_dimension_mean) #select columns of focus
 ```
 
-One of the most common cancers within the female population is breast carcinoma. Normal cells will transform and the formation of cancer cells will occur. The transformation of these cells can be assessed by looking at their nuclear morphometry.The nuclear morphometric features of size, shape, pattern, etc, have shown to predict the prognosis of breast cancer patients. [@narasimha2013significance] 
+One of the most common cancers within the female population is breast carcinoma. Normal cells will transform and the formation of cancer cells will occur. The transformation of these cells can be assessed by looking at their nuclear morphometry. The nuclear morphometric features of size, shape, pattern, etc, have shown to predict the prognosis of breast cancer patients. [@narasimha2013significance] 
 
 We will evaluate size by their radius, perimeter, and area. As shown in the study conducted by [@narasimha2013significance] , "there was a gradual increase in the nuclear area and perimeter in carcinomas when compared to benign lesions." Therefore, we will assume a positive correlation between size and carcinomas (malignant cell nuclei).
 
 We will begin our research with individual analysis of the radius, perimeter, and area and their relationship to the diagnosis.
 
 **The boxplot below shows the average radius of benign and malignant cell nuclei:**
+```{r, message = FALSE, error=FALSE}
+kable1 <- data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(radius_mean)) # average radius Benign = 12.1 and Malignant = 17.5
+
+knitr::kable(kable1)
+```
+
+```{r}
+t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
+```
+
+As seen in the averages, the average radius of benign cell nuclei is 12.1 um and of malignant cell nuclei is 17.5 um. The averages are statistically different from each other as shown in the t-test.
+
+* Our null hypothesis: there is no difference between the averages of benign and malignant cell nuclei.
+
+Because our p-value is close to zero, we can reject our null hypothesis above and conclude that there is a statistically significant difference between the two averages. 
+
+* Since zero is also not within the confidence interval either, it supports our rejection of the null with 95% confidence.
+
+**Next, we will look at the average perimeter of benign and malignant cell nuclei:**
+
+```{r, message=FALSE}
+kable2<- mean_bc_data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(perimeter_mean)) # average perimeter Benign = 78.1 and Malignant = 115
+
+knitr::kable(kable2)
+```
+
+```{r}
+t.test(mean_bc_data$perimeter_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
+```
+* On average, benign cell nuclei had an average perimeter of 78.08 um and malignant cell nuclei had an average of 115.4 um.
+
+* As shown in our t-test, there is a statistically significant difference.
+
+**Lastly, we will look at the average area of benign cell nuclei and malignant cell nuclei:**
+
+```{r, message=FALSE}
+kable3 <- mean_bc_data %>%
+  group_by(diagnosis) %>%
+  summarise(mean(area_mean)) # average area Benign = 463 and Malignant = 978
+
+knitr::kable(kable3)
+```
+
+```{r}
+t.test(mean_bc_data$area_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
+```
+
+* As seen again, the malignant cell nuclei have larger averages than benign cell nuclei which are statistically significant.
+
+* The benign cell nuclei had an average area of 463 um^2^ and the malignant cell nuclei had an average area of 978 um^2^.
+
+**Let's visualize all 3 plots side-by-side and record the relationship seen:**
 ```{r}
 radius_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = radius_mean)) +
   geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
@@ -80,22 +138,6 @@ radius_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = radius_mean)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 
-data %>%
-  group_by(diagnosis) %>%
-  summarise(mean(radius_mean)) # average radius Benign = 12.1 and Malignant = 17.5
-
-t.test(mean_bc_data$radius_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
-```
-
-As seen in the averages, the average radius of a benign cell nuclei is 12.1 and of a malignant cell nuclei is 17.5. The averages are significantly different from eachother as shown in the t-test.
-
-Our null hypothesis: there is no difference between the averages of a benign and malignant cell nuclei.
-Because our p-value is close to zero, we can reject our null hypothesis above and conclude that there is a statisitically significant difference between the two average. 
-
-Since zero is also not within the confidence interval, it supports our rejection of the null with 95% confidence.
-
-**Next, we will look at the average perimeter of benign and malignant cell nuclei:**
-```{r}
 peri_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = perimeter_mean)) +
   geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
   labs(x = "Diagnosis (Benign vs Malignant)", 
@@ -106,16 +148,6 @@ peri_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = perimeter_mean)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 
-
-mean_bc_data %>%
-  group_by(diagnosis) %>%
-  summarise(mean(perimeter_mean)) # average perimeter Benign = 78.1 and Malignant = 115
-```
-
-On average, benign cell nuclei had an average perimeter of 78.08 and malignant cell nuclei had an average of 115.4. 
-
-**Lastly, we will look at the average area of benign cell nuclei and malignant cell nuclei:**
-```{r}
 area_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = area_mean)) +
   geom_boxplot(fill = wes_palette("Moonrise3", n = 2)) +
   labs(x = "Diagnosis (Benign vs Malignant)", 
@@ -126,23 +158,12 @@ area_bp <- ggplot(mean_bc_data, aes(x = diagnosis, y = area_mean)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 
-mean_bc_data %>%
-  group_by(diagnosis) %>%
-  summarise(mean(area_mean)) # average area Benign = 463 and Malignant = 978
-```
-
-As seen again, the malignant cell nuclei has a larger average than benign cell nuclei.
-
-The benign cell nuclei had an average area of 463 and the malignant cell nuclei had an average area of 978.
-
-**Let's visualize all 3 plots side-by-side and record the relationship seen:**
-```{r}
 multiplot(radius_bp, peri_bp, area_bp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
 ```
 
-The relationship seen within this side-by-side comparison is that each variable of size (radius, perimeter, and area) shares a positive correlation with malignancy. As the size of each variable increases, the higher the likelihood of being categorized as malignant.
+* The relationship seen within this side-by-side comparison is that each variable of size (radius, perimeter, and area) shares a positive correlation with malignancy. As the size of each variable increases, there is a higher likelihood of being categorized as malignant.
 
-This shared relationship is not surprising since a greater radius would signify a greater perimeter, which would signify a greater area.
+* This shared relationship is not surprising since a greater radius would signify a greater perimeter, which would signify a greater area.
 
 **Let's now look at how the patients are distributed among the different diagnoses:**
 ```{r}
@@ -180,9 +201,11 @@ area_dp <- ggplot(mean_bc_data, aes(x = area_mean, fill = diagnosis)) +
 multiplot(radius_dp, peri_dp, area_dp, cols = 2) #the above 3 plots plotted on a single graph for visibility purposes
 ```
 
-The density plot is a great visual aid to see how the patients are distributed depending on their diagnosis. The peaks signify that at that particular x value, a majority of the patients will fall into that bin.
+* The density plot is a great visual aid to see how the patients are distributed depending on their diagnosis. The peaks signify that at that particular x value, a majority of the patients will fall into that bin.
 
-Lastly, let's look at the relationship of each variable of size (radius, perimeter, and area) to each other.
+  * Benign cells have one peak while malignant cells have two peaks
+
+*Lastly, let's look at the relationship of each variable of size (radius, perimeter, and area) to each other.*
 
 **We will do this with the use of scatter plots as shown below:**
 ```{r}
@@ -219,13 +242,15 @@ pa_sp <- ggplot(mean_bc_data, aes(x = perimeter_mean, y = area_mean, color = dia
 multiplot(rp_sp, ra_sp, pa_sp, cols = 2)
 ```
 
-An increase in one variable of size (radius, perimeter, or area) will result in an increase of another variable as they all share a positive correlation with one another. We also see a natural shift of malignancy as the size increases in all three measurements of radius, perimeter, and area. Therefore, we can conclude that a large cell nuclei could increase the likelihood of being malignant.
+* An increase in one variable of size (radius, perimeter, or area) will result in an increase of another variable as they all share a positive correlation with one another. We also see a natural shift of malignancy as the size increases in all three measurements of radius, perimeter, and area. 
 
-## Smoothness and Compactness to Cell Nuclei Diagnosis (Benign vs Malignant)
+* Therefore, we can conclude that large cell nuclei could increase the likelihood of malignancy.
 
-Smoothness is calculated by the local variation in radius lengths within a cell nuclei. The closer it is to zero, the less variation and more smooth the cell nuclei is. The further away it is from zero, the more variability and less smooth the cell nuclei is. 
+## Smoothness and Compactness to Cell Nuclei Diagnosis
 
-We will visualize the average smoothness between benign and malignant cells:
+Smoothness is calculated by the local variation in radius lengths within cell nuclei. The closer it is to zero, the less variation and the more smooth the cell nuclei are. The further away it is from zero, the more variability and less smooth the cell nuclei are. 
+
+**We will visualize the average smoothness between benign and malignant cells:**
 ```{r}
 ggplot(mean_bc_data, aes(x = diagnosis, y = smoothness_mean)) +
   geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
@@ -240,11 +265,11 @@ ggplot(mean_bc_data, aes(x = diagnosis, y = smoothness_mean)) +
 t.test(mean_bc_data$smoothness_mean ~ mean_bc_data$diagnosis, mu = 0, alt = "two.sided", conf = 0.95, var.eq = FALSE, paired = FALSE)
 ```
 
-We see that on average, malignant cells have more variation and are less smooth. Also, according to our t-test, there is a statistically significant difference between the average smoothness of benign and malignant cell nuclei.
+* We see that on average, malignant cells have more variation and are less smooth. Also, according to our t-test, there is a statistically significant difference between the average smoothness of benign and malignant cell nuclei.
 
-Compactness is defined by the cells ability to be packed together closely.
-In this case, the smaller the number, the more compact it is and the larger the number the less compact it is
+*Compactness is defined by the cell's ability to be packed together closely.*
 
+**In this case, the smaller the number, the more compact it is and the larger the number the less compact it is:**
 ```{r}
 ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
   geom_boxplot(fill = wes_palette("GrandBudapest1", n = 2)) +
@@ -260,10 +285,10 @@ ggplot(mean_bc_data, aes(x = diagnosis, y = compactness_mean)) +
 Malignant cell nuclei are less compact on average than benign cell nuclei.
 Both the smoothness and compactness seem to categorize diagnosis by the following:
 
-* The closer you are to zero the higher the likelihood you have a benign cell nuclei and the further you are from zero the higher the likelihood you have a malignant cell nuclei.
+* The closer you are to zero the higher the likelihood you have benign cell nuclei and the further you are from zero the higher the likelihood you have malignant cell nuclei.
 
-Now, let's look at the relationship between smoothness and compactness of a cell nuclei:
-```{r}
+**Now, let's look at the relationship between smoothness and compactness of a cell nuclei:**
+```{r, message = FALSE}
 ggplot(mean_bc_data, aes(x = smoothness_mean, y = compactness_mean, color = diagnosis)) +
   geom_point() +
   geom_smooth(se = FALSE, size = 2) +
@@ -275,70 +300,79 @@ ggplot(mean_bc_data, aes(x = smoothness_mean, y = compactness_mean, color = diag
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
-This graph effectively tells us that both of the diagnoses, are positively correlated with smoothness and compactness.
 
-## Concave Severity & Amount to Cell Nuclei Diagnosis (Benign vs Malignant)
+* This graph effectively tells us that both of the diagnoses are positively correlated with smoothness and compactness.
 
-Within this section of the analysis, concavity represents the severity of concave portions of the contour and the concave points represents the number of concave portions of the contour. The larger the number, the more severe the concave portions are and the higher the number of concave portions within a contour.
+## Concave Severity & Amount to Cell Nuclei Diagnosis
 
-Let's take a look at the summary data for concavity:
+Within this section of the analysis, concavity represents the severity of concave points of the contour and the concave points represent the number of concave points of the contour. The further away it is from zero, the more severe the concave points are and the higher the total number of concave points are. 
+
+**Let's take a look at the summary data for concavity:**
 ```{r}
-mean_bc_data %>%
+kable4 <- mean_bc_data %>%
   summarise(
     mean(concavity_mean),
     min(concavity_mean),
     max(concavity_mean)
   )
-```
-The range of the data within concavity is between 0 and 0.427. Zero indicating no severity in concave portions (relatively flat).
 
-Let's see if we can visualize the relationship between concavity (severity of concave portions) to diagnosis:
+knitr::kable(kable4)
+```
+
+* The range of the data within concavity is between 0 and 0.427. Zero indicating no severity in concave points (relatively flat).
+
+**Let's visualize the relationship between concavity (severity of concave points) to diagnosis:**
 ```{r}
 ggplot(mean_bc_data, aes(x = diagnosis, y = concavity_mean)) +
   geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
   labs(x = "Diagnosis", 
        y = "Average Concavity",
        title = "Malignant Cell Nuclei are More Severe in Concavity",
-       subtitle = "Closer to Zero, Less Severity in Concave Portions",
+       subtitle = "Closer to Zero, Less Severity in Concave Points",
        caption = "Source: https://archive.ics.uci.edu") +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
-As seen above, the higher the average concavity, the higher the likelihood of malignancy.
 
-Now let's explore the number of concave portions in the same regard as severity:
+* As seen above, the higher the average concavity, the higher the likelihood of malignancy.
+
+**Now let's explore the number of concave points in the same regard as severity:**
 ```{r}
-mean_bc_data %>%
+kable5 <- mean_bc_data %>%
   summarise(
     mean(concave.points_mean),
     min(concave.points_mean),
     max(concave.points_mean)
   )
+
+knitr::kable(kable5)
 ```
 
-The range of the data within concavity mean is between 0 and 0.201. Zero indicating no concave portions.
+* The range of the data within average concave points is between 0 and 0.201. Zero indicating no concave points around the nuclear border.
 
 ```{r}
 ggplot(mean_bc_data, aes(x = diagnosis, y = concave.points_mean)) +
   geom_boxplot(fill = wes_palette("GrandBudapest2", n = 2)) +
   labs(x = "Diagnosis", 
-       y = "Average Number of Concave Portions",
-       title = "Malignant Cell Nuclei Have More Concave Portions",
-       subtitle = "Closer to Zero, Less Concave Portions",
+       y = "Average Number of Concave Points",
+       title = "Malignant Cell Nuclei Have More Concave Points",
+       subtitle = "Closer to Zero, Less Concave Points",
        caption = "Source: https://archive.ics.uci.edu") +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
-The higher the number of concave points (or the higher the percent of the cell nuclei with concave portions), the higher the likelihood of malignancy.
-Both the severity and amount of concave points indicate a positive relationship with diagnosis.
 
-Therefore, if we plot the above variables, we assume to see a positive relationship as well:
-```{r}
+* Overall, the higher the number of concave points around the nuclear border, the higher the likelihood of malignancy.
+
+* Both the severity and amount of concave points indicate a positive relationship with the diagnosis.
+
+**Therefore, if we plot the above variables, we assume to see a positive relationship as well:**
+```{r, error=FALSE, warning=FALSE, message=FALSE}
 ggplot(mean_bc_data, aes(x = concave.points_mean, y = concavity_mean, color = diagnosis)) +
   geom_point(position = "jitter", alha = 1/5) +
   geom_smooth(se = FALSE, size = 2) +
   geom_vline(xintercept = .0853, linetype = "dashed", color = "blue", size = 1) +
-  labs(x = "Average Number of Concave Portions", 
+  labs(x = "Average Number of Concave Points", 
        y = "Average Concavity",
        title = "Benign Cell Nuclei has a Sudden Breakpoint",
        subtitle = "Number of Concave Points can be a Good Predictor of Malignancy",
@@ -346,51 +380,55 @@ ggplot(mean_bc_data, aes(x = concave.points_mean, y = concavity_mean, color = di
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
-This relationship makes sense because the higher the number or proportion of concave points within a cell nuclei, the higher the severity.
-If there are no concave points, there should be virtually no severity as the concavity is not there.
 
-There seems to be a drop off in benign cancer cells (in terms of concave points), lets explore the max of benign diagnosis in these two variables!
+* This relationship makes sense because the higher the number of concave points, the higher the severity.
 
-* 100% of cancer cells with an average number of concave Portions > 0.0853 are Malignant!
+  * If there are no concave points, there should be virtually no severity as the concavity is not there.
 
+**There seems to be a breakpoint in benign cancer cells (in terms of concave points) as shown by the blue dashed line**
+
+* 100% of cancer cells with an average number of concave points > 0.0853 are Malignant as shown by the maximum below
 ```{r}
-mean_bc_data %>%
+kable6 <- mean_bc_data %>%
   filter(diagnosis == "B") %>%
   summarise(
     mean(concave.points_mean),
     max(concave.points_mean) # max number of concave points is .0853. Let's add a vertical line to ggplot above at .09 to show cut off of concave points.
   )
+
+knitr::kable(kable6)
 ```
 
-With that being said, can we use number of concave points as an strong indicator/predictor for malignancy within a cell nuclei?
-such as that an average greater than .0853 is a good indicator of malignancy? Can this be applied to the population?
+With that being said, can we use the number of concave points as a strong indicator/predictor for malignancy within a cell nuclei? Such as that an average greater than .0853 is a good indicator of malignancy? Can this be applied to the population?
 
-* We can explore that with Logistic Linear Regression and see if this variable is a good predictor of malignancy compared to the other known variables.
+* We can explore that with a Logistic Linear Regression model and see if this variable is a good predictor of malignancy compared to the other known variables we've already explored.
 
 ## Logistic Regression - Binomial for all Analyzed Variables in Relation to Diagnosis
 
-Below is a Binomial Logistic Linear Regression for predicting the diagnosis of the cell nuclei. 
+Below is a Binomial Logistic Linear Regression model for predicting the diagnosis of the cell nuclei. 
 
-The model will utilize the variables used throughout this analysis (radius, perimeter, area, smoothness, compactness, concavity, and number of concave points) and determine which are good predictors and which are not. Good predictors are indicated by a small p-value and large effect size (Estimate).
+The model will utilize the variables used throughout this analysis (radius, perimeter, area, smoothness, compactness, concavity, and the number of concave points) and determine which are good predictors and which are not. Good predictors are indicated by a small p-value and large effect size (Estimate).
 
-```{r}
+```{r, warning=FALSE, message=FALSE, error=FALSE}
 predicted <- glm(diagnosis ~ radius_mean + perimeter_mean + area_mean + smoothness_mean + compactness_mean + concavity_mean + concave.points_mean, family = "binomial", data = mean_bc_data)
 summary(predicted)
 ```
 
-As seen above there are two variables that are statistically significant (less than 5%):
+**As seen above there are two variables that are statistically significant (less than 5%):**
 
 * Average Area
 
 * Average Number of Concave Points
 
-Now we will look at the effect size (Estimate). Although the average area has a statistically significant p-value, the effect size is relatively small at 0.03258.
+**Now we will analyze the effect size (Estimate):** 
 
-However, the average number of concave points has a statistically significant p-value and has a relatively large effect size at 66.82251.
+* Although the average area has a statistically significant p-value, the effect size is relatively small at 0.03258.
+
+* However, the average number of concave points has a statistically significant p-value and has a relatively large effect size at 66.82251.
 
 We can conclude from our regression analysis that the average area is a good predictor but the average number of concave points is the best predictor of diagnosis (Benign vs Malignant). 
 
-Lastly, we will graph our Regression Model above and ensure it captures the expected binomial relationship between diagnosis and the variables:
+**Lastly, we will graph our Regression Model above and ensure it captures the expected binomial relationship between diagnosis and the variables:**
 ```{r}
 probability_data <- data.frame(fitted.values = predicted$fitted.values, status = mean_bc_data$diagnosis)
 
@@ -411,13 +449,13 @@ ggplot(probability_data, aes(x = rank, y = fitted.values, color = status)) +
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
-As seen by the graph, our linear model has accurately captured the relationship of the variables to diagnosis.
+* As seen by the graph, our linear model has accurately captured the relationship of the variables in relation to diagnosis.
 
 ## Conclusion
 
-One of the most common cancers within the female population is breast carcinoma. Understanding the correlation between the nuclear morphometry and diagnosis can lead to early and accurate diagnosis. Which can lead to early treatment. As shown in this analysis, the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave portions all showed a positive correlation with malignancy. As the number grew further from zero, the higher the likelihood of the cell nuclei being malignant. 
+One of the most common cancers within the female population is breast carcinoma. Understanding the correlation between nuclear morphometry and diagnosis can lead to an early and accurate diagnosis. Which can lead to early treatment. As shown in this analysis, the radius, perimeter, area, smoothness, compactness, concavity, and the number of concave points all showed a positive correlation with malignancy. As the number grew further from zero, the higher the likelihood of malignancy.
 
-Although all morphometric features showed statistically meaningful correlations, there were only a select few that were marked as good predictors of malignancy as seen in our Binomial Linear Regression model. Overall, the average area and number of concave points of the cell nuclei were the two good predictors of malignancy in our analysis. The reason being, the average area had a p-value of 0.013 and an effect size of 0.033 and the average number of concave points had a p-value of 0.0043 and an effect size of 66.82. Due to the large effect size and small p-value, the average number of concave points is the best predictor within our analysis.
+Although all morphometric features showed statistically meaningful correlations, there were only a select few that were marked as good predictors of malignancy as seen in our Binomial Linear Regression model. Overall, the average area and the number of concave points of the cell nuclei were the two good predictors of malignancy in our analysis. The reason being, the average area had a p-value of 0.013 and an effect size of 0.033 and the average number of concave points had a p-value of 0.0043 and an effect size of 66.82. Due to the large effect size and small p-value, the average number of concave points is the best predictor within our analysis.
 
 **Opportunities for further analysis could be researching the following:**
 
